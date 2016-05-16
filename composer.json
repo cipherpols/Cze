@@ -1,0 +1,24 @@
+{
+    "name": "cipherpols/cze",
+    "description": "Zend Framework 1 Extension library by CipherPols", 
+    "license": "BSD-2-Clause",
+    "authors": [
+        {
+            "name": "Tuan Duong",
+            "email": "duongthaso@gmail.com"
+        }
+    ],
+    "autoload": {
+        "classmap": [
+            "library/"
+        ]
+    },
+    
+    
+    "require-dev": {
+        "phpunit/phpunit": "4.*"
+    },
+    "require" : {
+        "zendframework/zendframework1": "1.*"
+    }
+}
