@@ -13,7 +13,13 @@ namespace Cze;
  *
  * @method \Zend_View_Helper_HeadLink headLink
  * @method \Zend_View_Helper_HeadScript headScript
- * @property string flashMessages
+ * @property Exception $exception
+ * @property string $flashMessages
+ * @property int $errorCode
+ * @property string $errorMessage
+ * @property bool $displayExceptions
+ * @property string $metaTitle
+ * @property \Zend_Controller_Request_Abstract $request
  * @package Cze
  */
 class View extends \Zend_View

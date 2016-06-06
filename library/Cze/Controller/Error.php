@@ -7,7 +7,10 @@
  * @version 1.0
  */
 namespace Cze\Controller;
+
+use Cze\Application;
 use Cze\Controller;
+use Cze\Exception;
 
 /**
  * Class Error
@@ -34,11 +37,10 @@ class Error extends Controller
     {
         $this->view->errorCode = static::ERROR_CODE_500;
         $this->view->errorMessage = 'Server Internal Error';
-//        $this->view->setLayout('signup.phtml');
         $errors = $this->_getParam('error_handler');
 
         if (!$errors || !$errors instanceof \ArrayObject) {
-            $this->view->message = 'You have reached the error page';
+            $this->view->errorMessage = 'You have reached the error page';
             return;
         }
 
@@ -71,7 +73,7 @@ class Error extends Controller
             $this->view->displayExceptions = true;
         }
 
-        $this->view->metaTitle = $this->view->_('Seller Center is in maintenance mode');
+        $this->view->metaTitle = $this->view->_('System is in maintenance mode');
 
         if (static::ERROR_CODE_404 == $this->view->errorCode) {
             $this->view->errorMessage = 'We are sorry but the page you requested cannot be found.';
@@ -82,27 +84,23 @@ class Error extends Controller
 
     /**
      * Does handle exception logic, e.g. logging them, disabling view,
-     * passing infos to view etc. pp.
+     * passing info to view etc. pp.
      *
      * @param Exception $exception
      */
     protected function _handleException(Exception $exception)
     {
-        $logMessage = SellerCenter_Application_Error::toString($exception);
-
+        $logMessage = Application\Error::toString($exception);
         Application::getLog()->crit($logMessage);
-        if (isset($_SESSION)) {
-            Application::getNewRelic()->sendErrorMessage($logMessage, $_SESSION);
-        }
 
-        // are we in cli mode?
+        // Are we in cli mode?
         if ('cli' === strtolower(PHP_SAPI)) {
             $this->disableView();
             return;
         }
 
-        // is that a user readable exception?
-        if ($exception instanceof SellerCenter_Exception) {
+        // Is that a user readable exception?
+        if ($exception instanceof Exception) {
             $this->view->message = $logMessage;
             return;
         }

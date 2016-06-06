@@ -15,6 +15,10 @@ namespace Cze;
 abstract class Controller extends \Zend_Controller_Action
 {
     /**
+     * @var View
+     */
+    public $view;
+    /**
      * @var string
      */
     protected $defaultEncoding = 'UTF-8';
@@ -46,5 +50,15 @@ abstract class Controller extends \Zend_Controller_Action
             $this->view->setModuleName($module);
         }
         return $this->view;
+    }
+
+
+    /**
+     * Disables view
+     * to be used on ajax actions and responce an xml
+     */
+    public function disableView()
+    {
+        $this->getHelper('viewRenderer')->setNoRender();
     }
 }
