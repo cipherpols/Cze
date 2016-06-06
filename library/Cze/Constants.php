@@ -22,6 +22,10 @@ final class Constants
     const CZE_LOG = 'CZE_LOG';
     const CZE_SESSION = 'CZE_SESSION';
 
+    const CONTROLLER_DIRECTORY = 'controllers';
+
+    const ROUTER_CZE = 'cze';
+
     /**
      * Environment
      */

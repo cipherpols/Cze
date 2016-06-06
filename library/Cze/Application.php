@@ -14,11 +14,11 @@ use Cze\Controller\Plugin\ContentType;
 use Cze\Controller\Plugin\SecureCookies;
 use Cze\Session\Adapter\Factory;
 use Cze\Session\SaveHandler;
+use Cze\Controller\Router\Base as BaseRouter;
 
 /**
  * DeliverIT Application class
  * @author Tuan Duong <duongthaso@gmail.com>
- * @package Dit
  * @version 1.0
  * @method static bool getPhpSettings()
  * @method static bool getTimeZone()
@@ -169,7 +169,7 @@ class Application extends Base
         $front = \Zend_Controller_Front::getInstance();
         /** @var \Zend_Controller_Router_Rewrite $router */
         $router = $front->getRouter();
-        $router->addRoute('dit', new Controller\Router\Base());
+        $router->addRoute(Constants::ROUTER_CZE, new Controller\Router\Base());
         \Zend_Registry::set('router', $router);
 
         return $router;
@@ -196,12 +196,12 @@ class Application extends Base
 
         static::getModules();
 
-        $helper = new \Zend_Controller_Plugin_ErrorHandler();
-        $helper->setErrorHandlerModule('default');
-        $helper->setErrorHandlerController('error');
-        $helper->setErrorHandlerAction('index');
+        $errorPlugin = new \Zend_Controller_Plugin_ErrorHandler();
+        $errorPlugin->setErrorHandlerModule(BaseRouter::DEFAULT_MODULE);
+        $errorPlugin->setErrorHandlerController(BaseRouter::DEFAULT_ERROR_CONTROLLER);
+        $errorPlugin->setErrorHandlerAction(BaseRouter::DEFAULT_ERROR_ACTION);
 
-        $front->registerPlugin($helper);
+        $front->registerPlugin($errorPlugin);
 
         $contentType = new ContentType();
         $secureCookies = new SecureCookies();
@@ -212,7 +212,7 @@ class Application extends Base
     }
 
     /**
-     * Init modules for Dit framework
+     * Init modules for Cze framework
      * @return mixed
      * @throws Exception
      */
@@ -227,9 +227,9 @@ class Application extends Base
             throw new Exception('Application', 'Please create modules directory: ' . $modulePath);
         }
         $front = \Zend_Controller_Front::getInstance();
-        $front->setDefaultModule('default');
-        $front->setModuleControllerDirectoryName('controllers');
-        $front->setDefaultAction('index');
+        $front->setDefaultModule(BaseRouter::DEFAULT_MODULE);
+        $front->setModuleControllerDirectoryName(Constants::CONTROLLER_DIRECTORY);
+        $front->setDefaultAction(BaseRouter::DEFAULT_ACTION);
 
         $front->addModuleDirectory($modulePath);
 
@@ -268,5 +268,14 @@ class Application extends Base
         }
 
         return \Zend_Registry::get(Constants::CZE_CACHE);
+    }
+
+    protected static function initTheme()
+    {
+        if (isset(static::$config['application']['theme'])) {
+            return static::$config['application']['theme'];
+        } else {
+            return View::THEME_DEFAULT;
+        }
     }
 }

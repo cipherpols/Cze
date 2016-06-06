@@ -126,6 +126,6 @@ class SaveHandler implements \Zend_Session_SaveHandler_Interface
      */
     public static function getSessionPrefix()
     {
-        return strtoupper(sprintf(static::PREFIX_PATTERN, 'DIT'));
+        return strtoupper(sprintf(static::PREFIX_PATTERN, 'CZE'));
     }
 }
