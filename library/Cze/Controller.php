@@ -49,6 +49,7 @@ abstract class Controller extends \Zend_Controller_Action
             $this->view->setTheme(Application::getTheme());
             $this->view->setModuleName($module);
         }
+
         return $this->view;
     }
 
@@ -60,5 +61,19 @@ abstract class Controller extends \Zend_Controller_Action
     public function disableView()
     {
         $this->getHelper('viewRenderer')->setNoRender();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function postDispatch()
+    {
+        parent::postDispatch();
+
+        // Render view if it was not rendered before
+        if (!$this->view->isRendered()) {
+            $actionName = $this->getRequest()->getActionName();
+            $this->render($actionName);
+        }
     }
 }

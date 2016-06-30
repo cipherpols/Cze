@@ -68,10 +68,15 @@ class View extends \Zend_View
     );
 
     /**
+     * @var string
+     */
+    protected $viewScript = '';
+
+    /**
      * template manifest file name
      * @var string
      */
-    private $_manifest = 'manifest.php';
+    private $manifest = 'manifest.php';
 
     /**
      * @var string
@@ -82,54 +87,54 @@ class View extends \Zend_View
      * Base URL
      * @var string
      */
-    private $_baseUrl;
+    private $baseUrl;
 
     /**
      * @var string
      */
-    protected $_viewScript = '';
-
-    /**
-     * @var string
-     */
-    private $_scriptResult = '';
+    private $scriptResult = '';
 
     /**
      * @var
      */
-    private $_theme = '';
+    private $theme = '';
 
     /**
      * @var bool
      */
-    private $_skipTheme = false;
+    private $skipTheme = false;
 
     /**
      * @var string
      */
-    private $_layout = '';
+    private $layout = '';
 
     /**
      * @var bool
      */
-    private $_skipLayout = false;
+    private $skipLayout = false;
 
     /**
      * @var string
      */
-    private $_templatePath = '';
+    private $templatePath = '';
 
     /**
      * @var string
      */
-    private $_templateBasePath = '';
+    private $templateBasePath = '';
 
     /**
      * Template configuration
      *
      * @var array
      */
-    private $_templateOptions = array();
+    private $templateOptions = array();
+
+    /**
+     * @var bool
+     */
+    private $isRendered = false;
 
     public function init()
     {
@@ -144,11 +149,11 @@ class View extends \Zend_View
      */
     public function getBaseUrl()
     {
-        if (!$this->_baseUrl) {
-            $this->_baseUrl = Application::getFrontController()->getRequest()->getBaseUrl();
+        if (!$this->baseUrl) {
+            $this->baseUrl = Application::getFrontController()->getRequest()->getBaseUrl();
         }
 
-        return $this->_baseUrl;
+        return $this->baseUrl;
     }
 
     /**
@@ -235,11 +240,11 @@ class View extends \Zend_View
      */
     public function getTheme()
     {
-        if (empty($this->_theme)) {
+        if (empty($this->theme)) {
             $this->setTheme(static::THEME_DEFAULT);
         }
 
-        return $this->_theme;
+        return $this->theme;
     }
 
     /**
@@ -247,7 +252,7 @@ class View extends \Zend_View
      */
     public function setTheme($theme)
     {
-        $this->_theme = $theme;
+        $this->theme = $theme;
     }
 
     /**
@@ -255,7 +260,7 @@ class View extends \Zend_View
      */
     public function setLayout($layout)
     {
-        $this->_layout = $layout;
+        $this->layout = $layout;
     }
 
     /**
@@ -263,11 +268,11 @@ class View extends \Zend_View
      */
     public function getLayout()
     {
-        if (empty($this->_layout)) {
+        if (empty($this->layout)) {
             $this->setLayout(static::LAYOUT_DEFAULT);
         }
 
-        return $this->_layout;
+        return $this->layout;
     }
 
     /**
@@ -286,7 +291,7 @@ class View extends \Zend_View
      */
     public function render($name)
     {
-        if ($this->_skipTheme !== true) {
+        if ($this->skipTheme !== true) {
             $this->loadTheme();
         }
 
@@ -297,9 +302,10 @@ class View extends \Zend_View
         unset($name); // remove $name from local scope
 
         ob_start();
-        $this->_viewScript = $file;
+        $this->viewScript = $file;
         $this->_run();
 
+        $this->isRendered = true;
         return ob_get_clean(); // filter output
     }
 
@@ -356,7 +362,15 @@ class View extends \Zend_View
      */
     public function disableLayout()
     {
-        $this->_skipLayout = true;
+        $this->skipLayout = true;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isRendered()
+    {
+        return $this->isRendered;
     }
 
     /**
@@ -365,7 +379,7 @@ class View extends \Zend_View
      */
     public function enableLayout()
     {
-        $this->_skipLayout = false;
+        $this->skipLayout = false;
     }
 
     /**
@@ -378,22 +392,22 @@ class View extends \Zend_View
 
     protected function loadTheme()
     {
-        $this->_templatePath = $this->getTemplatePath();
-        $this->_templateBasePath = $this->getTemplateBasePath();
+        $this->templatePath = $this->getTemplatePath();
+        $this->templateBasePath = $this->getTemplateBasePath();
 
-        if (!file_exists($this->_templatePath)) {
-            throw new Exception($this, 'Template not found in ' . $this->_templatePath);
+        if (!file_exists($this->templatePath)) {
+            throw new Exception($this, 'Template not found in ' . $this->templatePath);
         }
 
-        if (!file_exists($this->_templateBasePath)) {
-            throw new Exception($this, 'Template base path not found in ' . $this->_templateBasePath);
+        if (!file_exists($this->templateBasePath)) {
+            throw new Exception($this, 'Template base path not found in ' . $this->templateBasePath);
         }
 
         // template manifest
         $this->loadManifest();
 
         /* First the theme path */
-        $this->addScriptPath($this->getTemplatePath());
+//        $this->addScriptPath($this->getTemplatePath());
         $moduleUri = '/modules/' . strtolower($this->moduleName) . '/';
         /* And the template path */
         $this->addScriptPath($this->getTemplatePath() . $moduleUri);
@@ -406,13 +420,13 @@ class View extends \Zend_View
 
     protected function initManifestHeadScript()
     {
-        $scriptFiles = $this->_templateOptions['layout'][$this->getLayout()]['js'];
+        $scriptFiles = $this->templateOptions['layout'][$this->getLayout()]['js'];
         $this->appendScriptFiles($scriptFiles);
     }
 
     protected function initManifestStylesheet()
     {
-        $stylesheetFiles = $this->_templateOptions['layout'][$this->getLayout()]['css'];
+        $stylesheetFiles = $this->templateOptions['layout'][$this->getLayout()]['css'];
         $this->appendStylesheets($stylesheetFiles);
     }
 
@@ -425,12 +439,12 @@ class View extends \Zend_View
     protected function loadManifest()
     {
         // load manifest file
-        $file = $this->getTemplatePath() . '/' . $this->_manifest;
+        $file = $this->getTemplatePath() . '/' . $this->manifest;
 
         if (file_exists($file)) {
-            $this->_templateOptions = require $file;
+            $this->templateOptions = require $file;
         } else {
-            $this->_templateOptions = array();
+            $this->templateOptions = array();
             throw new Exception($this, 'Manifest file not found for template ' . $file);
         }
     }
@@ -477,7 +491,7 @@ class View extends \Zend_View
         if (true === $this->_skipTemplate) {
             $this->renderContent();
         } else {
-            if (true !== $this->_skipLayout) {
+            if (true !== $this->skipLayout) {
                 // Executes the main layout
                 $page = $this->getTemplatePath() . '/' . $this->getLayout() . '.' . static::VIEW_SUFFIX;
                 if (!file_exists($page)) {
@@ -497,7 +511,7 @@ class View extends \Zend_View
      */
     protected function renderContent()
     {
-        echo $this->_scriptResult;
+        echo $this->scriptResult;
     }
 
     /**
@@ -507,8 +521,8 @@ class View extends \Zend_View
     private function _execScript()
     {
         ob_start();
-        include $this->_viewScript;
-        $this->_scriptResult = ob_get_contents();
+        include $this->viewScript;
+        $this->scriptResult = ob_get_contents();
         ob_end_clean();
     }
 }
