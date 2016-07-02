@@ -31,6 +31,8 @@ use Cze\Controller\Router\Base as BaseRouter;
  * @method static CacheManager getCache()
  * @method static void getModules()
  * @method static string getTheme()
+ * @method static \Zend_Db_Profiler getDbProfiler
+ * @method static \Zend_Db_Adapter_Abstract[] getDb
  */
 class Application extends Base
 {
@@ -270,6 +272,9 @@ class Application extends Base
         return \Zend_Registry::get(Constants::CZE_CACHE);
     }
 
+    /**
+     * @return string
+     */
     protected static function initTheme()
     {
         if (isset(static::$config['application']['theme'])) {
@@ -277,5 +282,89 @@ class Application extends Base
         } else {
             return View::THEME_DEFAULT;
         }
+    }
+
+    /**
+     * Startup multi-database adapter
+     *
+     * @return array
+     * @throws Exception
+     * @throws \Zend_Db_Exception
+     * @throws \Zend_Db_Profiler_Exception
+     */
+    protected static function initDb()
+    {
+        $options = isset(self::$config['resources']['multidb']) ? self::$config['resources']['multidb'] : array();
+        $reader = null;
+        $writer = null;
+
+        if (array_key_exists('writer', $options)) {
+            $params = $options['writer'];
+            $adapter = array_key_exists('adapter', $params) ? $params['adapter'] : 'pdo_mysql';
+            $default = array_key_exists('default', $params) ? $params['default'] == true : false;
+
+            unset($params['adapter']);
+            unset($params['default']);
+
+            $writer = \Zend_Db::factory($adapter, $params);
+            if ($default) {
+                \Zend_Db_Table::setDefaultAdapter($writer);
+            }
+        } else {
+            throw new Exception(self::getInstance(), 'Database Writer configuration not found');
+        }
+
+        if (array_key_exists('reader', $options)) {
+            $params = $options['reader'];
+            $adapter = array_key_exists('adapter', $params) ? $params['adapter'] : 'pdo_mysql';
+            $default = array_key_exists('default', $params) ? $params['default'] == true : false;
+
+            unset($params['adapter']);
+            unset($params['default']);
+
+            $reader = \Zend_Db::factory($adapter, $params);
+            if ($default) {
+                \Zend_Db_Table::setDefaultAdapter($reader);
+            }
+        } else {
+            $reader = $writer;
+        }
+
+        $profiler = self::getDbProfiler();
+
+        if ($profiler) {
+            $reader->setProfiler($profiler);
+            $writer->setProfiler($profiler);
+        }
+
+        \Zend_Registry::set('db_reader', $reader);
+        \Zend_Registry::set('db_writer', $writer);
+
+        return ['writer' => $writer, 'reader' => $reader];
+    }
+
+    /**
+     * @return null|\Zend_Db_Profiler|\Zend_Db_Profiler_Firebug
+     */
+    protected static function initDbProfiler()
+    {
+        // No profile should be enabled on live environment
+        if (Constants::ENV_LIVE == APPLICATION_ENV) {
+            return null;
+        }
+
+        $profiler = null;
+        $options = isset(self::$config['resources']['profiler']) ? self::$config['resources']['profiler'] : array();
+        $enabled = isset($options['enabled']) && ($options['enabled'] == 1);
+        if ($enabled) {
+            if (isset($options['type']) && ($options['type'] == 'firebug')) {
+                $profiler = new \Zend_Db_Profiler_Firebug('DB Queries');
+            } else {
+                $profiler = new \Zend_Db_Profiler();
+            }
+            $profiler->setEnabled(true);
+        }
+
+        return $profiler;
     }
 }
