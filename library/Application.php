@@ -17,9 +17,6 @@ use Cze\Session\SaveHandler;
 use Cze\Controller\Router\Base as BaseRouter;
 
 /**
- * DeliverIT Application class
- * @author Tuan Duong <duongthaso@gmail.com>
- * @version 1.0
  * @method static bool getPhpSettings()
  * @method static bool getTimeZone()
  * @method static Error getErrorHandler()
