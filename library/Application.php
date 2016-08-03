@@ -70,14 +70,6 @@ class Application extends Base
     }
 
     /**
-     * @return bool
-     */
-    public static function isInCliCall()
-    {
-        return 'cli' === strtolower(PHP_SAPI);
-    }
-
-    /**
      * Initialize PHP Settings
      * @return bool
      */

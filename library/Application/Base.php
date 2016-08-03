@@ -7,9 +7,13 @@ namespace Cze\Application;
 
 use Cze\Application;
 use Cze\Constants;
+use Cze\Controller\Plugin\CliErrorHandler;
+use Cze\Controller\Request\Cli as CliRequest;
+use Cze\Controller\Response\Cli as CliResponse;
 use Cze\Controller\Router\Api as ApiRouter;
 use Cze\Controller\Router\Base as BaseRouter;
 use Cze\Controller\Request\Api as ApiRequest;
+use Cze\Controller\Router\Cli as CliRouter;
 use Cze\Exception;
 
 /**
@@ -143,46 +147,6 @@ abstract class Base
     }
 
     /**
-     * Bootstrap MVC app
-     */
-    public function init()
-    {
-    }
-
-    /**
-     * Runs MVC Application
-     *
-     */
-    public function run()
-    {
-        \Zend_Registry::set(Constants::CZE_APPLICATION, static::$instance);
-
-        $this->init();
-
-        static::getRouter();
-
-        try {
-            /* @var \Zend_Controller_Front $front */
-            $front = static::getFrontController();
-            if ($front) {
-                if (isset($_SERVER['REQUEST_URI'])) {
-                    if (preg_match('#^/api/#', $_SERVER['REQUEST_URI']) === 1) {
-                        $this->routeToApi($front);
-                    }
-                }
-
-                $front->dispatch();
-            }
-        } catch (\Exception $e) {
-            Application::getLog()->crit(Error::toString($e));
-            if (APPLICATION_ENV === Constants::ENV_DEVELOPMENT) {
-                throw $e;
-            }
-
-        }
-    }
-
-    /**
      * Singleton initialization
      *
      * @return Base
@@ -213,6 +177,86 @@ abstract class Base
         } else {
             static::$resources[$name] = $item;
         }
+    }
+
+    /**
+     * Bootstrap MVC app
+     */
+    public function init()
+    {
+    }
+
+    /**
+     * Runs MVC Application
+     * @return void
+     * @throws \Exception
+     */
+    public function run()
+    {
+        if (self::isInCliCall()) {
+            $this->runCli();
+            return;
+        }
+
+        \Zend_Registry::set(Constants::CZE_APPLICATION, static::$instance);
+
+        $this->init();
+
+        static::getRouter();
+
+        try {
+            /* @var \Zend_Controller_Front $front */
+            $front = static::getFrontController();
+            if ($front) {
+                if (isset($_SERVER['REQUEST_URI'])) {
+                    if (preg_match('#^/api/#', $_SERVER['REQUEST_URI']) === 1) {
+                        $this->routeToApi($front);
+                    }
+                }
+
+                $front->dispatch();
+            }
+        } catch (\Exception $e) {
+            Application::getLog()->crit(Error::toString($e));
+            if (APPLICATION_ENV === Constants::ENV_DEVELOPMENT) {
+                throw $e;
+            }
+
+        }
+    }
+
+    /**
+     * Run CLI application
+     * @return void
+     * @throws \Exception
+     * @throws \Zend_Controller_Exception
+     */
+    public function runCli()
+    {
+        \Zend_Registry::set(Constants::CZE_APPLICATION, static::$instance);
+
+        $this->init();
+
+        static::getModules();
+        $front = \Zend_Controller_Front::getInstance();
+        $front->throwExceptions(true);
+        $front->setRouter(new CliRouter())
+            ->setRequest(new CliRequest())
+            ->setResponse(new CliResponse())
+            ->setParam('disableOutputBuffering', 1)
+            ->setParam('noErrorHandler', true)
+            ->setParam('noViewRenderer', true)
+            ->registerPlugin(new CliErrorHandler(), 100);
+
+        $front->dispatch();
+    }
+
+    /**
+     * @return bool
+     */
+    public static function isInCliCall()
+    {
+        return 'cli' === strtolower(PHP_SAPI);
     }
 
     /**
